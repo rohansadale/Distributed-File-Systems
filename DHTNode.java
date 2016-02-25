@@ -83,12 +83,11 @@ public class DHTNode
 			if(nodeid!=-1)
 			{
 				currentNode			= new Node(CURRENT_NODE_IP,CURRENT_NODE_PORT,nodeid); //Successfull established the connection
-				activeNodes			= client.PostJoin(currentNode);
+				activeNodes			= client.addToDHT(currentNode);
 				if(activeNodes!=null) 
 					isRegistered = true;
 				else 
 					System.out.println("Unable to add node to DHT !!!!!");
-				transport.close();
 				break;
 			}
 			try
@@ -106,6 +105,8 @@ public class DHTNode
 			updateFingerTable(); //Updating the finger table
 			printFingerTable(); //Utility function to print finger table
 			contactNodes(); //Contact other nodes in the network so that they could update their finger Table
+			client.PostJoin(); //Notifying Super-Peer that current node's information has been shared with all other nodes in P2P system
+			transport.close();
 			System.out.println("Starting thrift server at host " + CURRENT_NODE_IP);
 			TServerTransport serverTransport    = new TServerSocket(CURRENT_NODE_PORT); //Starting thrift server so that other nodes could contact
 	        TTransportFactory factory           = new TFramedTransport.Factory();

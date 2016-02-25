@@ -56,7 +56,7 @@ public class JoinProtocolHandler implements JoinService.Iface
 	can go ahead with joining process
 	*/
 	@Override
-	public List<Node> PostJoin(Node node) throws TException
+	public List<Node> addToDHT(Node node) throws TException
 	{
 		System.out.println("Acknowleding after joining DHT ....");
 		boolean isrecorded 	= activeNodes.add(node); //Keeping the nodes sorted order with respect to node-id
@@ -69,7 +69,6 @@ public class JoinProtocolHandler implements JoinService.Iface
 				else return 1;
 			}
 		});
-		isBusy	= false;
 
 		System.out.println("Currently connected Node in DHT ... ");
 		System.out.println("---------------------------------------------------------");
@@ -86,6 +85,16 @@ public class JoinProtocolHandler implements JoinService.Iface
 		return activeNodes;
 	}
 
+	/*
+	Interface method Implemented
+	This method will basically update status of SuperPeer to available i.e SuperPeer is now ready to allow other nodes to join the network
+	*/
+	@Override
+	public void PostJoin()
+	{
+		isBusy	= false;
+	}
+	
 	/*
 	Interface implemented extended
 	Returns a random from where process of read or write begins
