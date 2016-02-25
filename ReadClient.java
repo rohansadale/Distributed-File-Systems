@@ -30,7 +30,7 @@ public class ReadClient
 
 	public static void main(String[] targs) throws TException
 	{
-		if(targs.length==1)
+		if(targs.length>=1)
 		{
 			CONFIG_FILE_NAME			= targs[0];
 			setParameters();
@@ -68,12 +68,17 @@ public class ReadClient
 				OStransport.open();
 				System.out.println("Reading file " + file.getName() + " FROM DHT");
 				Path result 					= OSclient.read(file.getName(),false,WRITE_DIR);
-				System.out.println("File Content :- " + result.content);
-				for(int i=result.route.size()-1,j=1;i>=0;i--,j++)
+				if(result.content.equals("NIL")==true)
+					System.out.println("File not present in DHT !!!");
+				else
 				{
-					System.out.print(j+". "+ result.route.get(i));
-					if(0==i) System.out.print(" [File Read from this Node]");
-					System.out.println("");
+					System.out.println("File Content :- " + result.content);
+					for(int i=result.route.size()-1,j=1;i>=0 && VERBOSE!=0;i--,j++)
+					{
+						System.out.print(j+". "+ result.route.get(i));
+						if(0==i) System.out.print(" [File Read from this Node]");
+						System.out.println("");
+					}
 				}
 				System.out.println("\n\n");
 				OStransport.close();

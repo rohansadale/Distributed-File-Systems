@@ -67,7 +67,7 @@ public class WriteClient
 				System.out.println("Writing file " + file.getName());
 				Path result 					= OSclient.Write(file.getName(),getFileContent(READ_DIR+file.getName()),false,WRITE_DIR);
 				System.out.println("Write Status :- " + result.hasWritten);
-				for(int i=result.route.size()-1,j=1;i>=0;i--,j++)
+				for(int i=result.route.size()-1,j=1;i>=0 && VERBOSE!=0;i--,j++)
 				{
 					System.out.print(j+". "+ result.route.get(i));
 					if(0==i) System.out.print(" [File Written to this Node]");

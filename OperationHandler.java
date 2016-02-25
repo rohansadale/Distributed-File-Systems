@@ -58,7 +58,8 @@ public class OperationHandler implements OperationService.Iface
 		boolean shouldWrite		= false;
 		Node previousNode       = DHTNode.previousNode;
         shouldWrite             = shouldWrite || (hashedFileId == currentNodeId); //check if hashedFileId equals currentNodeId
-		
+		shouldWrite				= shouldWrite || (currentNodeId == DHTNode.previousNode.id);
+	
 		//Checking if current node is successor of previous node and hashedfileId is between those two nodeId
         if(previousNode.id > currentNodeId)
         {
@@ -165,6 +166,7 @@ public class OperationHandler implements OperationService.Iface
 		String content;
         BufferedReader br       = null;
         StringBuilder sb        = new StringBuilder();
+		if(new File(basePath+filename).exists() == false) return "NIL";
         try
         {
             br                  = new BufferedReader(new FileReader(basePath+filename));
