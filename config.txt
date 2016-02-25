@@ -3,3 +3,5 @@ Port:9090
 ReadDirectory:data/
 WriteDirectory:/export/scratch/
 Verbose:1
+FingerTableSize:5
+MOD:32

@@ -25,11 +25,13 @@ public class DHTNode
 	private static long nodeid							= -1;
 	private static String SUPER_PEER_KEY			 	= "SuperPeer";
 	private static String PORT_KEY						= "Port"; 	
+	private static String FINGER_TABLE_SZ_KEY		 	= "FingerTableSize";
+	private static String MOD_KEY						= "MOD"; 	
 
 	private static String CONFIG_FILE_NAME              = "";
-	public static int MOD								= 32;  //Maximum of 32 Nodes in the network
+	public static int MOD								= 0;  //Maximum of 32 Nodes in the network
 	public static List<Node> activeNodes				= null; //List of nodes currently in DHT
-	public static int fingerTableSize					= 5; //Maximum number of entries in DHT
+	public static int fingerTableSize					= 0; //Maximum number of entries in DHT
 	public static Node currentNode						= null; 
 	public static ArrayList<Node> fingerTable			= null; //finger table for this node
 	public static Node previousNode						= null; //Pointer of previous node
@@ -197,6 +199,10 @@ public class DHTNode
                     SUPER_PEER_IP       = tokens[1];
                 if(tokens.length==2 && tokens[0].equals(PORT_KEY)==true)
                     PORT                = Integer.parseInt(tokens[1]);
+                if(tokens.length==2 && tokens[0].equals(FINGER_TABLE_SZ_KEY)==true)
+                    fingerTableSize     = Integer.parseInt(tokens[1]);
+                if(tokens.length==2 && tokens[0].equals(MOD_KEY)==true)
+                    MOD                 = Integer.parseInt(tokens[1]);
             }
         }
         catch(IOException e) {}
