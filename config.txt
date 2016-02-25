@@ -1,0 +1,5 @@
+SuperPeer:csel-kh4240-01.cselabs.umn.edu
+Port:9090
+ReadDirectory:data/
+WriteDirectory:/export/scratch/
+Verbose:1
