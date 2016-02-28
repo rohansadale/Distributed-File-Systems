@@ -54,12 +54,17 @@ public class DHTNode
 			return;
 		}
 	
-		if(targs.length==1)
+		if(targs.length >=1 )
         {
             CONFIG_FILE_NAME            = targs[0];
             setParameters();
         }
-
+		
+		if(targs.length >=2)
+		{
+			CURRENT_NODE_PORT			= Integer.parseInt(targs[1]);
+		}
+	
         if("".equals(SUPER_PEER_IP)==true)
         {
             System.out.println("Unable to connect to SuperPeer: IP Address Missing");
@@ -80,7 +85,7 @@ public class DHTNode
 		{
 			System.out.println("Waiting for connection ......");
 			nodeid					= client.Join(CURRENT_NODE_IP,CURRENT_NODE_PORT);
-			if(nodeid!=-1)
+			if(nodeid >= 0)
 			{
 				currentNode			= new Node(CURRENT_NODE_IP,CURRENT_NODE_PORT,nodeid); //Successfull established the connection
 				activeNodes			= client.addToDHT(currentNode);
@@ -88,6 +93,11 @@ public class DHTNode
 					isRegistered = true;
 				else 
 					System.out.println("Unable to add node to DHT !!!!!");
+				break;
+			}
+			else if(nodeid==-2)
+			{	
+				System.out.println("DHT has reached its maximum capacity and hence no new node can join the network");
 				break;
 			}
 			try

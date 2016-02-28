@@ -16,10 +16,11 @@ public class JoinProtocolHandler implements JoinService.Iface
 	/*
 	Constructor to initialize class variables
 	*/
-	public JoinProtocolHandler()
+	public JoinProtocolHandler(int N)
 	{
 		activeNodes	 = new ArrayList<Node>(); //Maintaing active nodes in DHT
 		isBusy       = false;
+		MOD			 = N;
 	}
 
 	/*
@@ -45,6 +46,7 @@ public class JoinProtocolHandler implements JoinService.Iface
 	{
 		System.out.println("Requesting for connection .....");
 		if(isBusy) return -1; //If Super Peer is busy i.e other node is also joining DHT then this node will have to wait till other node have joined the process
+		if(activeNodes.size() >= MOD) return -2;
 		long nodeid = getNodeId(ipaddress+port);
 		isBusy = true;
 		return nodeid;
