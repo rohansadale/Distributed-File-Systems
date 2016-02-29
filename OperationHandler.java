@@ -133,7 +133,8 @@ public class OperationHandler implements OperationService.Iface
         OStransport.open();
         Path nextStop 		          	= OSclient.Write(filename,content,shouldWriteOnNextNode,basePath);
         nextStop.route.add(DHTNode.currentNode.ip);
-        OStransport.close();
+        nextStop.port.add(DHTNode.currentNode.port);
+		OStransport.close();
         return nextStop;
 	}
 	
@@ -154,6 +155,7 @@ public class OperationHandler implements OperationService.Iface
         OStransport.open();
         Path nextStop 		            = OSclient.read(filename,shouldReadFromNextNode,basePath);
         nextStop.route.add(DHTNode.currentNode.ip);
+        nextStop.port.add(DHTNode.currentNode.port);
         OStransport.close();
         return nextStop;
 	}
@@ -206,8 +208,10 @@ public class OperationHandler implements OperationService.Iface
 			System.out.println("Writing file " + filename + " with hash value " + hashedFileId + " on node " + DHTNode.currentNode.ip);
 			boolean hasWritten		= WriteContentToFile(filename,content,basePath);
 			ArrayList<String> route = new ArrayList<String>();
+			ArrayList<Integer> port = new ArrayList<Integer>();
 			route.add(DHTNode.currentNode.ip);
-			Path result				= new Path("",hasWritten,route);
+			port.add(DHTNode.currentNode.port);
+			Path result				= new Path("",hasWritten,route,port);
 			return result;
 		}
 	
@@ -235,8 +239,10 @@ public class OperationHandler implements OperationService.Iface
             System.out.println("Reading file " + filename + " with hash value " + hashedFileId + " from node " + DHTNode.currentNode.ip);
             String content			= readFromFile(filename,basePath);
 			ArrayList<String> route = new ArrayList<String>();
+			ArrayList<Integer> port = new ArrayList<Integer>();
 			route.add(DHTNode.currentNode.ip);
-			Path result				= new Path(content,false,route);
+			port.add(DHTNode.currentNode.port);
+			Path result				= new Path(content,false,route,port);
 			return result;
 		}
 

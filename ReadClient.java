@@ -75,7 +75,7 @@ public class ReadClient
 					System.out.println("File Content :- " + result.content);
 					for(int i=result.route.size()-1,j=1;i>=0 && VERBOSE!=0;i--,j++)
 					{
-						System.out.print(j+". "+ result.route.get(i));
+						System.out.print(j+". "+ result.route.get(i)+":"+result.port.get(i));
 						if(0==i) System.out.print(" [File Read from this Node]");
 						System.out.println("");
 					}
