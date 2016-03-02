@@ -38,85 +38,92 @@ public class ReadClient
 
 		if("".equals(SUPER_PEER_IP)==true)
 		{
-			System.out.println("Unable to connect to SuperPeer: IP Address Missing");
-			return;
+				System.out.println("Unable to connect to SuperPeer: IP Address Missing");
+				return;
 		}
 		if(0==PORT)
 		{
-			System.out.println("Unable to connect to SuperPeer: Port Missing");
-			return;
+				System.out.println("Unable to connect to SuperPeer: Port Missing");
+				return;
 		}
-		
+
 		File folder						= new File(READ_DIR);
 		File[] listOfFiles				= folder.listFiles();
-		
-		for(File file: listOfFiles)
-		{
-			if(file.isFile())
-			{
-				TTransport transport    	    = new TSocket(SUPER_PEER_IP,PORT);
-		        TProtocol protocol          	= new TBinaryProtocol(new TFramedTransport(transport));
-		        JoinService.Client client   	= new JoinService.Client(protocol);
-		        transport.open();
-				Node startNode	 				= client.GetNode();
-				transport.close();
 
-				System.out.println("Initial Connection to " + startNode.ip + " on port " + startNode.port);
-				TTransport OStransport			= new TSocket(startNode.ip,startNode.port);
-				TProtocol OSprotocol			= new TBinaryProtocol(new TFramedTransport(OStransport));
-				OperationService.Client OSclient= new OperationService.Client(OSprotocol);
-				OStransport.open();
-				System.out.println("Reading file " + file.getName() + " FROM DHT");
-				Path result 					= OSclient.read(file.getName(),false,WRITE_DIR);
-				if(result.content.equals("NIL")==true)
-					System.out.println("File not present in DHT !!!");
-				else
+		try
+		{	
+				for(File file: listOfFiles)
 				{
-					System.out.println("File Content :- " + result.content);
-					for(int i=result.route.size()-1,j=1;i>=0 && VERBOSE!=0;i--,j++)
-					{
-						System.out.print(j+". "+ result.route.get(i)+":"+result.port.get(i));
-						if(0==i) System.out.print(" [File Read from this Node]");
-						System.out.println("");
-					}
+						if(file.isFile())
+						{
+								TTransport transport    	    = new TSocket(SUPER_PEER_IP,PORT);
+								TProtocol protocol          	= new TBinaryProtocol(new TFramedTransport(transport));
+								JoinService.Client client   	= new JoinService.Client(protocol);
+								transport.open();
+								Node startNode	 				= client.GetNode();
+								transport.close();
+
+								System.out.println("Initial Connection to " + startNode.ip + " on port " + startNode.port);
+								TTransport OStransport			= new TSocket(startNode.ip,startNode.port);
+								TProtocol OSprotocol			= new TBinaryProtocol(new TFramedTransport(OStransport));
+								OperationService.Client OSclient= new OperationService.Client(OSprotocol);
+								OStransport.open();
+								System.out.println("Reading file " + file.getName() + " FROM DHT");
+								Path result 					= OSclient.read(file.getName(),false,WRITE_DIR);
+								if(result.content.equals("NIL")==true)
+										System.out.println("File not present in DHT !!!");
+								else
+								{
+										System.out.println("File Content :- " + result.content);
+										for(int i=result.route.size()-1,j=1;i>=0 && VERBOSE!=0;i--,j++)
+										{
+												System.out.print(j+". "+ result.route.get(i)+":"+result.port.get(i));
+												if(0==i) System.out.print(" [File Read from this Node]");
+												System.out.println("");
+										}
+								}
+								System.out.println("\n\n");
+								OStransport.close();
+						}
 				}
-				System.out.println("\n\n");
-				OStransport.close();
-			}
 		}
-		
+		catch(TException x)
+		{
+				System.out.println(" =================== Unable to establish connection with SuperPeer ... Exiting ... =================");
+				return;	
+		}
 	}
-	
+
 	public static void setParameters()
 	{
-		String content;
-        BufferedReader br       = null;
-        try
-        {
-            br                  = new BufferedReader(new FileReader(CONFIG_FILE_NAME));
-            while((content = br.readLine()) != null)
-            {
-            	String[] tokens = content.split(":");
-            	if(tokens.length==2 && tokens[0].equals(SUPER_PEER_KEY)==true)
-            		SUPER_PEER_IP 		= tokens[1];
-            	if(tokens.length==2 && tokens[0].equals(PORT_KEY)==true)
-            		PORT 				= Integer.parseInt(tokens[1]);
-            	if(tokens.length==2 && tokens[0].equals(READ_DIR_KEY)==true)
-            		READ_DIR 			= tokens[1];
-            	if(tokens.length==2 && tokens[0].equals(WRITE_DIR_KEY)==true)
-            		WRITE_DIR 	 		= tokens[1];
-            	if(tokens.length==2 && tokens[0].equals(VERBOSE_KEY)==true)
-            		VERBOSE 	 		= Integer.parseInt(tokens[1]);
-            }
-        }
-        catch(IOException e) {}
-        finally
-        {
-            try
-            {
-                if(br!=null) br.close();
-            }
-            catch(IOException e) {}
-        }
+			String content;
+			BufferedReader br       = null;
+			try
+			{
+					br                  = new BufferedReader(new FileReader(CONFIG_FILE_NAME));
+					while((content = br.readLine()) != null)
+					{
+							String[] tokens = content.split(":");
+							if(tokens.length==2 && tokens[0].equals(SUPER_PEER_KEY)==true)
+									SUPER_PEER_IP 		= tokens[1];
+							if(tokens.length==2 && tokens[0].equals(PORT_KEY)==true)
+									PORT 				= Integer.parseInt(tokens[1]);
+							if(tokens.length==2 && tokens[0].equals(READ_DIR_KEY)==true)
+									READ_DIR 			= tokens[1];
+							if(tokens.length==2 && tokens[0].equals(WRITE_DIR_KEY)==true)
+									WRITE_DIR 	 		= tokens[1];
+							if(tokens.length==2 && tokens[0].equals(VERBOSE_KEY)==true)
+									VERBOSE 	 		= Integer.parseInt(tokens[1]);
+					}
+			}
+			catch(IOException e) {}
+			finally
+			{
+					try
+					{
+							if(br!=null) br.close();
+					}
+					catch(IOException e) {}
+			}
 	}
 }

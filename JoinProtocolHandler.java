@@ -29,10 +29,23 @@ public class JoinProtocolHandler implements JoinService.Iface
 	long getNodeId(String input)
 	{
 		long hash = 5381;
-		for (int i = 0; i < input.length() ;i++) 
+		while(true)
 		{
-			hash = ((hash << 11) + hash) + input.charAt(i)*26*(i+1);
-			hash = hash%MOD;		
+			for (int i = 0; i < input.length() ;i++) 
+			{
+				hash = ((hash << 11) + hash) + input.charAt(i)*26*(i+1);
+				hash = hash%MOD;		
+			}
+			boolean isPresent = false;
+			for(int i=0;i<activeNodes.size();i++)
+			{
+				if(activeNodes.get(i).id == hash) 
+				{
+					isPresent = true;
+					break;
+				}
+			}
+			if(isPresent == false) break;
 		}
 		return hash;
 	}

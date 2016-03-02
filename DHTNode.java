@@ -5,6 +5,7 @@ import org.apache.thrift.server.TServer;
 import org.apache.thrift.server.TServer.Args;
 import org.apache.thrift.server.TSimpleServer;
 import org.apache.thrift.transport.*;
+import org.apache.thrift.server.TThreadPoolServer;
 
 import java.io.*;
 import java.lang.Thread;
@@ -75,155 +76,163 @@ public class DHTNode
             System.out.println("Unable to connect to SuperPeer: Port Missing");
             return;
         }
-	
-        TTransport transport 		= new TSocket(SUPER_PEER_IP,PORT);  //Establishing connection with Super Peer
-        TProtocol protocol   		= new TBinaryProtocol(new TFramedTransport(transport));
-        JoinService.Client client 	= new JoinService.Client(protocol);
-        transport.open();
+
+		try
+		{	
+        	TTransport transport 		= new TSocket(SUPER_PEER_IP,PORT);  //Establishing connection with Super Peer
+			TProtocol protocol   		= new TBinaryProtocol(new TFramedTransport(transport));
+        	JoinService.Client client 	= new JoinService.Client(protocol);
+        	transport.open();
 		
-		while(true)
-		{
-			System.out.println("Waiting for connection ......");
-			nodeid					= client.Join(CURRENT_NODE_IP,CURRENT_NODE_PORT);
-			if(nodeid >= 0)
+			while(true)
 			{
-				currentNode			= new Node(CURRENT_NODE_IP,CURRENT_NODE_PORT,nodeid); //Successfull established the connection
-				activeNodes			= client.addToDHT(currentNode);
-				if(activeNodes!=null) 
-					isRegistered = true;
-				else 
-					System.out.println("Unable to add node to DHT !!!!!");
-				break;
+				System.out.println("Waiting for connection ......");
+				nodeid					= client.Join(CURRENT_NODE_IP,CURRENT_NODE_PORT);
+				if(nodeid >= 0)
+				{
+					currentNode			= new Node(CURRENT_NODE_IP,CURRENT_NODE_PORT,nodeid); //Successfull established the connection
+					activeNodes			= client.addToDHT(currentNode);
+					if(activeNodes!=null) 
+						isRegistered = true;
+					else 
+						System.out.println("Unable to add node to DHT !!!!!");
+					break;
+				}
+				else if(nodeid==-2)
+				{	
+					System.out.println("DHT has reached its maximum capacity and hence no new node can join the network");
+					break;
+				}
+				try
+				{
+					Thread.sleep(SLEEP_TIMEOUT); //Waiting for SLEEP_TIMEOUT seconds before again trying for connection
+				}
+				catch(InterruptedException e) 
+				{
+						System.out.println("In Exception ");
+				}
 			}
-			else if(nodeid==-2)
-			{	
-				System.out.println("DHT has reached its maximum capacity and hence no new node can join the network");
-				break;
-			}
-			try
+
+			if(isRegistered)
 			{
-				Thread.sleep(SLEEP_TIMEOUT); //Waiting for SLEEP_TIMEOUT seconds before again trying for connection
-			}
-			catch(InterruptedException e) 
-			{
-				System.out.println("In Exception ");
+					updateFingerTable(); //Updating the finger table
+					printFingerTable(); //Utility function to print finger table
+					contactNodes(); //Contact other nodes in the network so that they could update their finger Table
+					client.PostJoin(); //Notifying Super-Peer that current node's information has been shared with all other nodes in P2P system
+					transport.close();
+					System.out.println("Starting thrift server at host " + CURRENT_NODE_IP);
+					TServerTransport serverTransport    = new TServerSocket(CURRENT_NODE_PORT); //Starting thrift server so that other nodes could contact
+					TTransportFactory factory           = new TFramedTransport.Factory();
+					OperationHandler operate            = new OperationHandler();
+					processor                           = new OperationService.Processor(operate);
+					TThreadPoolServer.Args args         = new TThreadPoolServer.Args(serverTransport);
+					args.processor(processor);  //Set handler
+					args.transportFactory(factory);  //Set FramedTransport (for performance)
+					System.out.println("Starting the simple server...");
+					TThreadPoolServer server            = new TThreadPoolServer(args);
+					server.serve(); //Serving the requests
 			}
 		}
-
-		if(isRegistered)
+		catch(TException x)
 		{
-			updateFingerTable(); //Updating the finger table
-			printFingerTable(); //Utility function to print finger table
-			contactNodes(); //Contact other nodes in the network so that they could update their finger Table
-			client.PostJoin(); //Notifying Super-Peer that current node's information has been shared with all other nodes in P2P system
-			transport.close();
-			System.out.println("Starting thrift server at host " + CURRENT_NODE_IP);
-			TServerTransport serverTransport    = new TServerSocket(CURRENT_NODE_PORT); //Starting thrift server so that other nodes could contact
-	        TTransportFactory factory           = new TFramedTransport.Factory();
-    	    OperationHandler operate            = new OperationHandler();
-       	 	processor                           = new OperationService.Processor(operate);
-        	TServer.Args args                   = new TServer.Args(serverTransport);
-        	args.processor(processor);  //Set handler
-        	args.transportFactory(factory);  //Set FramedTransport (for performance)
-        	System.out.println("Starting the simple server...");
-        	TServer server                      = new TSimpleServer(args);
-        	server.serve(); //Serving the requests
+				System.out.println(" =================== Unable to establish connection with SuperPeer ... Exiting ... =================");
+				return;
 		}
 	}
 
 	/*
-	Function to update finger table. Each entry in finger table is filled with succ(nodeid + 2^(i-1)) where 1<=i<=5
-	In addition to this, function also stores previous node for given node.
-	*/
+	   Function to update finger table. Each entry in finger table is filled with succ(nodeid + 2^(i-1)) where 1<=i<=5
+	   In addition to this, function also stores previous node for given node.
+	 */
 	private static void updateFingerTable()
 	{
-		fingerTable = new ArrayList<Node>();
-		for(int i=1;i<=fingerTableSize;i++) 
-		{
-			int succ = (int)(nodeid + (1 << (i-1)))%MOD;		
-			int j    = 0;	
-			for(j=0;j<activeNodes.size();j++)
+			fingerTable = new ArrayList<Node>();
+			for(int i=1;i<=fingerTableSize;i++) 
 			{
-				if(activeNodes.get(j).id > succ) break;
+					int succ = (int)(nodeid + (1 << (i-1)))%MOD;		
+					int j    = 0;	
+					for(j=0;j<activeNodes.size();j++)
+					{
+							if(activeNodes.get(j).id > succ) break;
+					}
+					if(j == activeNodes.size()) fingerTable.add(activeNodes.get(0)); 
+					else fingerTable.add(activeNodes.get(j));
 			}
-			if(j == activeNodes.size()) fingerTable.add(activeNodes.get(0)); 
-			else fingerTable.add(activeNodes.get(j));
-		}
-	
-		//Updating previous Node	
-		for(int i=0;i<activeNodes.size();i++)
-		{
-			if(activeNodes.get(i).id < currentNode.id) previousNode    = activeNodes.get(i);
-            else break;
-		}
-		if(null == previousNode) previousNode = activeNodes.get(activeNodes.size()-1);
+
+			//Updating previous Node	
+			for(int i=0;i<activeNodes.size();i++)
+			{
+					if(activeNodes.get(i).id < currentNode.id) previousNode    = activeNodes.get(i);
+					else break;
+			}
+			if(null == previousNode) previousNode = activeNodes.get(activeNodes.size()-1);
 	}
 
 	/*
-	Utility function to print Finger table
-	*/
+	   Utility function to print Finger table
+	 */
 	public static void printFingerTable()
 	{
-		System.out.println("Finger Table for Node with HostName :- " + CURRENT_NODE_IP);
-		System.out.println("---------------------------------------------------------");
-        System.out.println("        HostName               Port      NodeId          ");
-        System.out.println("---------------------------------------------------------");
-		for(int i=0;i<fingerTable.size();i++)
-        {
-            System.out.println(fingerTable.get(i).ip + "    " + fingerTable.get(i).port + "        " + fingerTable.get(i).id);
-            System.out.println("---------------------------------------------------------");
-        }
-		System.out.println("Previous Node:-   " + previousNode.ip + "   "  + previousNode.port + "   " + previousNode.id);
-        System.out.println("\n\n");
+			System.out.println("Finger Table for Node with HostName :- " + CURRENT_NODE_IP);
+			System.out.println("---------------------------------------------------------");
+			System.out.println("        HostName               Port      NodeId          ");
+			System.out.println("---------------------------------------------------------");
+			for(int i=0;i<fingerTable.size();i++)
+			{
+					System.out.println(fingerTable.get(i).ip + "    " + fingerTable.get(i).port + "        " + fingerTable.get(i).id);
+					System.out.println("---------------------------------------------------------");
+			}
+			System.out.println("Previous Node:-   " + previousNode.ip + "   "  + previousNode.port + "   " + previousNode.id);
+			System.out.println("\n\n");
 	}
 
 	/*
-	In this function connection with other nodes is established so that other nodes could know about existence of this node and correspondingly update finger table
-	*/
+	   In this function connection with other nodes is established so that other nodes could know about existence of this node and correspondingly update finger table
+	 */
 	private static void contactNodes() throws TException
 	{
-		for(int i=0;i<activeNodes.size();i++)
-		{
-			if(CURRENT_NODE_IP.equals(activeNodes.get(i).ip) == true) continue;
-			System.out.println("Contacting node with IP " + activeNodes.get(i).ip + " and nodeId " + activeNodes.get(i).id);
-			TTransport transport            = new TSocket(activeNodes.get(i).ip,activeNodes.get(i).port); //Establishing connection with other nodes in P2P network
-        	TProtocol protocol              = new TBinaryProtocol(new TFramedTransport(transport));
-        	OperationService.Client client  = new OperationService.Client(protocol);
-        	transport.open();
-			client.UpdateDHT(activeNodes); //UpdateDHT which updates the finger table of other nodes in DHT
-			transport.close();
-			System.out.println("Updated finger table for node with IP " + activeNodes.get(i).ip + " and nodeId " + activeNodes.get(i).id + "\n\n");
-		}
+			for(int i=0;i<activeNodes.size();i++)
+			{
+					if(CURRENT_NODE_IP.equals(activeNodes.get(i).ip) == true) continue;
+					System.out.println("Contacting node with IP " + activeNodes.get(i).ip + " and nodeId " + activeNodes.get(i).id);
+					TTransport transport            = new TSocket(activeNodes.get(i).ip,activeNodes.get(i).port); //Establishing connection with other nodes in P2P network
+					TProtocol protocol              = new TBinaryProtocol(new TFramedTransport(transport));
+					OperationService.Client client  = new OperationService.Client(protocol);
+					transport.open();
+					client.UpdateDHT(activeNodes); //UpdateDHT which updates the finger table of other nodes in DHT
+					transport.close();
+					System.out.println("Updated finger table for node with IP " + activeNodes.get(i).ip + " and nodeId " + activeNodes.get(i).id + "\n\n");
+			}
 	}
-	
+
 	public static void setParameters()
-    {
-        String content;
-        BufferedReader br       = null;
-        try
-        {
-            br                  = new BufferedReader(new FileReader(CONFIG_FILE_NAME));
-            while((content = br.readLine()) != null)
-            {
-                String[] tokens = content.split(":");
-                if(tokens.length==2 && tokens[0].equals(SUPER_PEER_KEY)==true)
-                    SUPER_PEER_IP       = tokens[1];
-                if(tokens.length==2 && tokens[0].equals(PORT_KEY)==true)
-                    PORT                = Integer.parseInt(tokens[1]);
-                if(tokens.length==2 && tokens[0].equals(FINGER_TABLE_SZ_KEY)==true)
-                    fingerTableSize     = Integer.parseInt(tokens[1]);
-                if(tokens.length==2 && tokens[0].equals(MOD_KEY)==true)
-                    MOD                 = Integer.parseInt(tokens[1]);
-            }
-        }
-        catch(IOException e) {}
-        finally
-        {
-            try
-            {
-                if(br!=null) br.close();
-            }
-            catch(IOException e) {}
-        }
-    }
+	{
+			String content;
+			BufferedReader br       = null;
+			try
+			{
+					br                  = new BufferedReader(new FileReader(CONFIG_FILE_NAME));
+					while((content = br.readLine()) != null)
+					{
+							String[] tokens = content.split(":");
+							if(tokens.length==2 && tokens[0].equals(SUPER_PEER_KEY)==true)
+									SUPER_PEER_IP       = tokens[1];
+							if(tokens.length==2 && tokens[0].equals(PORT_KEY)==true)
+									PORT                = Integer.parseInt(tokens[1]);
+							if(tokens.length==2 && tokens[0].equals(FINGER_TABLE_SZ_KEY)==true)
+									fingerTableSize     = Integer.parseInt(tokens[1]);
+							if(tokens.length==2 && tokens[0].equals(MOD_KEY)==true)
+									MOD                 = Integer.parseInt(tokens[1]);
+					}
+			}
+			catch(IOException e) {}
+			finally
+			{
+					try
+					{
+							if(br!=null) br.close();
+					}
+					catch(IOException e) {}
+			}
+	}
 }
