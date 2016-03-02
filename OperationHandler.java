@@ -21,7 +21,7 @@ public class OperationHandler implements OperationService.Iface
         long hash = 5381;
         for (int i = 0; i < input.length() ;i++)
         {
-            hash = ((hash << 5) + hash) + input.charAt(i)*26;
+            hash = ((hash << 11) + hash) + input.charAt(i)*26*(i+1);
             hash = hash%DHTNode.MOD;
         }
         return hash;

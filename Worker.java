@@ -80,7 +80,7 @@ public class Worker
         if(0==Op) 
         {
             System.out.println("Reading file " + filename + " FROM DHT");
-            result 					= OSclient.read(file.getName(),false,WRITE_DIR);
+            result 					= OSclient.read(filename,false,WRITE_DIR);
             if(result.content.equals("NIL")==true)
                 System.out.println("File not present in DHT !!!");
             System.out.println("File Content :- " + result.content);
