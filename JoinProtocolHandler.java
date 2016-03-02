@@ -11,7 +11,7 @@ public class JoinProtocolHandler implements JoinService.Iface
 	private List<Node> activeNodes;
 	private boolean isBusy; //Boolean denoting whether Super Peer is busy i.e other node is in process of joining DHT
 	private int seed = 42;	
-	private int MOD  = 32;
+	private int MOD  = 0;
 
 	/*
 	Constructor to initialize class variables
@@ -46,6 +46,19 @@ public class JoinProtocolHandler implements JoinService.Iface
 				}
 			}
 			if(isPresent == false) break;
+			for(int i=0;i<MOD;i++)
+			{
+				isPresent = false;
+				for(int j=0;j<activeNodes.size();j++)
+				{
+					if(activeNodes.get(j).id == i)
+					{
+						isPresent = true;
+						break;
+					}
+				}
+				if(isPresent == false) return i;
+			}
 		}
 		return hash;
 	}
