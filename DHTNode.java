@@ -7,12 +7,12 @@ import org.apache.thrift.server.TSimpleServer;
 import org.apache.thrift.transport.*;
 import org.apache.thrift.server.TThreadPoolServer;
 
-import java.io.*;
 import java.lang.Thread;
 import java.net.InetAddress;
 import java.net.UnknownHostException; 
 import java.util.List;
 import java.util.ArrayList;
+import java.io.*;
 
 public class DHTNode
 {
